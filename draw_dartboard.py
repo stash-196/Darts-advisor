@@ -7,7 +7,7 @@ import importlib
 importlib.reload(cfg)
 
 # Read reference image
-refFilename = "materials/shomen_cropped.jpg"
+refFilename = "resources/shomen_cropped.jpg"
 print("Reading reference image : ", refFilename)
 img = cv2.imread(refFilename, cv2.IMREAD_COLOR)
 
@@ -45,10 +45,9 @@ for i in range(BOARD_DESCRIPTION[:, 0].size):
         BOARD_DESCRIPTION[i, j] = cfg.getScoreDescription(np.array([i, j]))
     print('.', end=""),
 
-print()
 
 
-# Write aligned image to disk.
+# Write drawn image to disk.
 OUT_FILENAME = "outputs/draw_board.jpg"
 print("Saving aligned image : ", OUT_FILENAME)
 cv2.imwrite(OUT_FILENAME, img)
