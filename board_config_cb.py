@@ -7,19 +7,23 @@ from constraints import SCORES
 
 COLOR = (255, 255, 255)
 THICKNESS = 1
-# tx = 280
-# ty = 50
-CENTER = (287, 270)
-BULL_IN_R = 15
-BULL_OUT_R = 30
-TRIPPLE_IN_R = 127
-TRIPPLE_OUT_R = 145
-DOUBLE_IN_R = 207
-DOUBLE_OUT_R = 228
-BOAED_EDGE_R = 280
-MASK_EDGE_R = 350
 
-THETA_ZERO = np.arctan((45 - CENTER[1])/(264 - CENTER[0]))
+CENTER = (558, 306)
+BULL_IN_R = 15
+BULL_OUT_R = 31
+TRIPPLE_IN_R = 133
+TRIPPLE_OUT_R = 153
+DOUBLE_IN_R = 216
+DOUBLE_OUT_R = 240
+BOAED_EDGE_R = 290
+MASK_EDGE_R = 360
+
+MASK_EDGE_BOTTOM = 597
+MASK_EDGE_OFFSET = 64
+
+FIRST_LINE_END_X = 515
+FIRST_LINE_END_Y = 70
+THETA_ZERO = np.arctan((FIRST_LINE_END_Y - CENTER[1])/(FIRST_LINE_END_X - CENTER[0]))
 # print(THETA_ZERO)
 
 PI_SEGMENTS = np.linspace(-np.pi, np.pi, 21, endpoint=True)
@@ -36,7 +40,7 @@ for key, value in SCORES.items():
     SCORES_LIST.append(temp)
 # print(SCORES_LIST)
 
-def getScoreDescription(target):
+def getScore(target):
     target = np.array(target)
     center = np.array(CENTER)
     relative = target - center
@@ -57,8 +61,10 @@ def getScoreDescription(target):
                     return SCORES_LIST[i + 20][0]
                 elif TRIPPLE_IN_R <= r <= TRIPPLE_OUT_R:
                     return SCORES_LIST[i + 40][0]
-                else:
+                elif r <= DOUBLE_IN_R:
                     return SCORES_LIST[i][0]
+                else:
+                    return ''
         print("i=", i)
         print("i, j = ", target)
         print("theta = ", theta/np.pi*180)
@@ -66,53 +72,24 @@ def getScoreDescription(target):
         return ''
 
 
-# --------------------------------------------
-# test scoredescriptions
-# sd = getScoreDescription([300, 100]) #20
-# print(sd)
-# sd = getScoreDescription([350, 100]) # 1
-# print(sd)
-# sd = getScoreDescription([400, 130]) #18
-# print(sd)
-# sd = getScoreDescription([450, 400]) #15
-# print(sd)
-# sd = getScoreDescription([400, 430]) #2
-# print(sd)
-# sd = getScoreDescription([335, 440]) #17
-# print(sd)
-# sd = getScoreDescription([270, 440]) #3
-# print(sd)
-# sd = getScoreDescription([220, 447]) #19
-# print(sd)
-# sd = getScoreDescription([693, 301])
-# print(sd)
-# sd = getScoreDescription([416, 97])
-# print(sd)
-# sd = getScoreDescription([370, 377])
-# print(sd)
-# sd = getScoreDescription([209, 382])
-# print(sd)
-# sd = getScoreDescription([76, 311])
-# print(sd)
-# sd = getScoreDescription([409, 325])
-# print(sd)
-# sd = getScoreDescription([481, 173])
-# print(sd)
+def getCenterOfRegions():
+
+    
+    center_of_regions = {}
+    scores = constraints.SCORES_ordered
+    for key, value in scores.items():
+        if 'D' in key:
+            pass
+        elif 'T' in key:
+            pass
+        else:
+            vertex_1 = 
+
+getCenterOfRegions()
 
 
 
-# LINE_ENDPOINTS = {
-#     '5-20_17-3': [(264, 45), (312, 496)],
-#     '20-1_3-19': [(338, 51), (238, 494)],
-#     '1-18_19-7': [(402, 76), (172, 467)],
-#     '18-4_7-16': [(456, 122), (114, 421)],
-#     '4-13_16-8': [(498, 179), (77, 360)],
-#     '13-6_8-11': [(514, 249), (60, 292)],
-#     '6-10_11-14': [(514, 316), (65, 223)],
-#     '10-15_14-9': [(486, 387), (90, 155)],
-#     '15-2_9-12': [(442, 442), (136, 102)],
-#     '2-17_12-5': [(385, 482), (198, 61)]
-# }
+
 
 # def getAllLinearFunctions():
 #     line_functions = {}

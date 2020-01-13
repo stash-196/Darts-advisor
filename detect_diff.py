@@ -8,30 +8,60 @@ def cropOutObject(src):
     # cv.drawContours(img, [cnt], 0, (0,255,0), 3)
     max_area = 0
     middle = np.zeros(2)
+    max_contour_left = 0
+    max_contour_right = 0
+    max_contour_top = 0
+    max_contour_bottom = 0
+    max_index = 0
+
     for i in range(len(contours)):
         area = cv2.contourArea(contours[i])  # 全輪郭の面積計算
         if max_area < area:
             max_area = area
-            middle = np.zeros(2)
+            max_index = i
+
+            max_contour_left = contours[i][0][0][0]
+            max_contour_right = contours[i][0][0][0]
+            max_contour_top = contours[i][0][0][1]
+            max_contour_bottom = contours[i][0][0][1]
             for pt in contours[i]:
                 # print(pt[0])
-                middle += np.array(pt[0])
-            middle /= len(contours[i])
+                if pt[0][0] < max_contour_left:
+                    max_contour_left = pt[0][0]
+                if pt[0][0] > max_contour_right:
+                    max_contour_right = pt[0][0]
+                if pt[0][1] < max_contour_top:
+                    max_contour_top = pt[0][1]
+                if pt[0][1] > max_contour_bottom:
+                    max_contour_bottom = pt[0][1]
+
+            print(max_contour_left)
 
     # calculate cropping region
-    left = int(middle[0] - 100)
-    right = int(middle[0] + 100)
-    top = int(middle[1] - 100)
-    bottom = int(middle[1] + 100)
+    size = 100
+    left = int(max_contour_left - size)
+    right = int(max_contour_right + size)
+    top = int(max_contour_top - size)
+    bottom = int(max_contour_bottom + size)
 
     # crop src
     result = src[top:bottom, left:right]
-    return result, left, right, top, bottom, contours
+    return result, left, right, top, bottom, contours, max_index
 
 def getLinePts(src):
+    print("HA!")
     rows, cols = src.shape
     contours, hierarchy = cv2.findContours(src, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-    cnt = contours[0]
+    max_index = 0
+    max_area = 0
+    for i in range(len(contours)):
+        area = cv2.contourArea(contours[i])  # 全輪郭の面積計算
+        if max_area < area:
+            max_area = area
+            max_index = i
+    if max_index > len(contours) - 1:
+        print("error, maxindex:", max_index, "len(contours):", len(contours))
+    cnt = contours[max_index]
     [vx,vy,x,y] = cv2.fitLine(cnt, cv2.DIST_L2, 0, 0.01, 0.01)
     lefty = int((-x*vy/vx) + y)
     righty = int(((cols-x)*vy/vx)+y)

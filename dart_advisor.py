@@ -4,20 +4,20 @@ from numpy.linalg import inv
 import constraints
 import detect_diff
 import draw_dartboard
-import board_config as cfg
-import alignImages
+import board_config_cb as cfg
+import align_Images
 
 import importlib
 importlib.reload(constraints)
 importlib.reload(detect_diff)
 importlib.reload(draw_dartboard)
 importlib.reload(cfg)
-importlib.reload(alignImages)
+importlib.reload(align_Images)
 
 from constraints import SCORES
-from detect_diff import getDifference, getLine, cropOutObject
+from detect_diff import getDifference, getLinePts, cropOutObject
 from draw_dartboard import draw_regions
-from alignImages import alignImages
+from align_Images import alignImages
 
 
 import sys
@@ -25,29 +25,52 @@ import sys
 
 
 # Read reference image
-refFilename = "resources/masked_shomen.jpg"
+refFilename = "resources/shomen_cb.jpeg"
 print("Reading reference image : ", refFilename)
 im_ref = cv2.imread(refFilename, cv2.IMREAD_COLOR)
+tx = 0
+ty = 0
+im_ref_drawn = draw_regions(im_ref, tx, ty, cfg)
 
-# Read background image
-bcgFilename = "resources/0111.0.jpg"
-print("Reading reference image : ", bcgFilename)
-im_bcg = cv2.imread(bcgFilename, cv2.IMREAD_COLOR)
 
 # Read mask
-maskFilename = "resources/mask_shomen_regions.jpg"
+maskFilename = "resources/mask_shomen_wb_regions.jpg"
 print("Reading mask image : ", maskFilename)
 mask_ref = cv2.imread(maskFilename, cv2.IMREAD_COLOR)
 mask_ref = mask_ref[:, :, 0]
+# Read mask
+mask_alignFilename = "resources/mask_shomen_cb_half.jpg"
+print("Reading mask image : ", mask_alignFilename)
+mask_ref_align = cv2.imread(mask_alignFilename, cv2.IMREAD_COLOR)
+mask_ref_align = mask_ref_align[:, :, 0]
 
+
+
+# mask reference
+im_ref_masked  = np.empty_like(im_ref, dtype=np.uint8) #im_bcg.copy()
+im_ref_masked [:, :, 0] = cv2.bitwise_and(im_ref[:, :, 0], mask_ref_align)
+im_ref_masked [:, :, 1] = cv2.bitwise_and(im_ref[:, :, 1], mask_ref_align)
+im_ref_masked [:, :, 2] = cv2.bitwise_and(im_ref[:, :, 2], mask_ref_align)
 print(mask_ref.shape)
+
+
+# Read background image
+bcgFilename = "resources/0112.1.0.jpeg"
+print("Reading reference image : ", bcgFilename)
+im_bcg = cv2.imread(bcgFilename, cv2.IMREAD_COLOR)
+print(im_bcg.shape)
+
 
 print("Aligning images ...")
 # Registered image will be resotred in imReg.
 # The estimated homography will be stored in h.
-im_bcg2ref, h_bcg2ref = alignImages(im_bcg, im_ref)
+im_bcg2ref, h_bcg2ref = alignImages(im_bcg, im_ref_masked)
 h_ref2bcg = np.linalg.inv(h_bcg2ref)
 print("... homography attained")
+
+im_bcg2ref_draw = draw_regions(im_bcg2ref, 0, 0, cfg)
+
+
 
 height, width, channels = im_bcg.shape
 mask_bcg = cv2.warpPerspective(mask_ref, h_ref2bcg, (width, height))
@@ -59,7 +82,7 @@ im_bcg_masked[:, :, 1] = cv2.bitwise_and(im_bcg[:, :, 1], mask_bcg)
 im_bcg_masked[:, :, 2] = cv2.bitwise_and(im_bcg[:, :, 2], mask_bcg)
 
 # Read dart
-thrownFilename = "resources/0111.2.jpg"
+thrownFilename = "resources/0112.1.1.jpeg"
 print("Reading mask image : ", thrownFilename)
 im_thrown = cv2.imread(thrownFilename, cv2.IMREAD_COLOR)
 # mask thrown
@@ -82,25 +105,26 @@ dilation_bcg = cv2.dilate(diff_thred, kernel, iterations=3)
 closing_bcg = cv2.morphologyEx(dilation_bcg, cv2.MORPH_CLOSE, kernel)
 
 # transform bcg2ref
-height, width, channels = im_ref.shape
+height, width, channels = im_ref_masked.shape
 closing_ref = cv2.warpPerspective(closing_bcg, h_bcg2ref, (width, height))
 im_thrown_ref = cv2.warpPerspective(im_thrown, h_bcg2ref, (width, height))
+tx = 0
+ty = 0
+im_thrown_ref_drawn = draw_regions(im_thrown_ref, tx, ty, cfg)
 
 # crop out object
-closing_ref_cropped, left, right, top, bottom, contours = cropOutObject(closing_ref)
+closing_ref_cropped, left, right, top, bottom, contours, max_index = cropOutObject(closing_ref)
 
 # Calculate Fitted Line
-pt1, pt2 = getLine(closing_ref_cropped)
+pt1, pt2 = getLinePts(closing_ref_cropped, contours, max_index)
 img = cv2.line(im_thrown_ref[top:bottom, left:right], pt1, pt2,(0,255,0),2)
 
 # Calculate Apex
-if len(contours) > 1:
-    print("error: len( contours_cropped )  1")
-arg = np.argmin(contours[0][:, 0, 0], axis=0)
+arg = np.argmin(contours[max_index][:, 0, 0], axis=0)
 # print(contours[0][:, 0])
 
 line = cfg.getLinearFunctionCartesian(pt1[0], pt1[1], pt2[0], pt2[1])
-apex_cropped_x = contours[0][:, 0][arg, 0] - left
+apex_cropped_x = contours[max_index][:, 0][arg, 0] - left
 apex_cropped = (apex_cropped_x, int(line(apex_cropped_x)))
 print(apex_cropped)
 outfile = cv2.circle(im_thrown_ref[top:bottom, left:right], apex_cropped,  10, (0, 0, 255), 5)
@@ -111,14 +135,14 @@ outfile = cv2.circle(im_thrown_ref[top:bottom, left:right], apex_cropped,  10, (
 # Write inv homo to disk.
 outFilename = "outputs/test_output.jpg"
 print("Saving detected difference image : ", outFilename)
-cv2.imwrite(outFilename, outfile)
+cv2.imwrite(outFilename, im_thrown_ref)
 
 
 
 
 
 
-# cv2.imshow('wtf', im_ref)
+# cv2.imshow('wtf', im_ref_masked)
 # cv2.waitKey()
 # cv2.destroyAllWindows()
 # print('exitting image')
