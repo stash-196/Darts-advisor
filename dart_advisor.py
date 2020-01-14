@@ -116,8 +116,8 @@ im_thrown_ref_drawn = draw_regions(im_thrown_ref, tx, ty, cfg)
 closing_ref_cropped, left, right, top, bottom, contours, max_index = cropOutObject(closing_ref)
 
 # Calculate Fitted Line
-pt1, pt2 = getLinePts(closing_ref_cropped, contours, max_index)
-img = cv2.line(im_thrown_ref[top:bottom, left:right], pt1, pt2,(0,255,0),2)
+pt1, pt2 = getLinePts(closing_ref_cropped)
+img = cv2.line(closing_ref_cropped, pt1, pt2,(0,255,0),2)
 
 # Calculate Apex
 arg = np.argmin(contours[max_index][:, 0, 0], axis=0)
@@ -129,13 +129,15 @@ apex_cropped = (apex_cropped_x, int(line(apex_cropped_x)))
 print(apex_cropped)
 outfile = cv2.circle(im_thrown_ref[top:bottom, left:right], apex_cropped,  10, (0, 0, 255), 5)
 
-# outfile = cv2.drawContours(im_thrown_ref, contours, -1, (0,255,0), 3)
+diff_thred_cropped = diff_thred.copy()[top:bottom, left:right]
+contours_dif, hierarchy = cv2.findContours(diff_thred_cropped, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)  # contours: 輪郭として抽出された点の座標の行列
+outfile = cv2.drawContours(im_thrown_ref, contours_dif, -1, (0,255,0), 3)
 
 
 # Write inv homo to disk.
 outFilename = "outputs/test_output.jpg"
 print("Saving detected difference image : ", outFilename)
-cv2.imwrite(outFilename, im_thrown_ref)
+cv2.imwrite(outFilename, img)
 
 
 
