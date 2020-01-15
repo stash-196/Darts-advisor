@@ -57,33 +57,33 @@ def getScoreDescription(src, in_cfg):
 
 
 # # Read reference image
-# refFilename = "resources/shomen_cb.jpeg"
-# print("Reading reference image : ", refFilename)
-# img = cv2.imread(refFilename, cv2.IMREAD_COLOR)
+refFilename = "resources/shomen_cb.jpeg"
+print("Reading reference image : ", refFilename)
+img = cv2.imread(refFilename, cv2.IMREAD_COLOR)
 
 
-# img = draw_regions(img, 0, 0, cfgc)
+img = draw_regions(img, 0, 0, cfgc)
 
 # target = (600, 400)
 
-# center_of_regions = cfgc.getCenterOfRegions()
-# # print(center_of_regions)
-# # v = tuple(v)
-# for key, value in center_of_regions.items():
-#     print(key, value)
-#     color = (0, 0, 255)
-#     if "_D" in key: color = (0, 255, 0)
-#     if "_T" in key: color = (0, 255, 255)
-#     img = cv2.circle(img, value, 5, color, 3)
+center_of_regions = cfgc.getCenterOfRegions()
+# print(center_of_regions)
+# v = tuple(v)
+for key, value in center_of_regions.items():
+    # print(key, value)
+    color = (0, 0, 255)
+    if "_D" in key: color = (0, 255, 0)
+    if "_T" in key: color = (0, 255, 255)
+    img = cv2.circle(img, value, 5, color, 3)
 # score = cfgc.getScore(target)
 
 
 # # BOARD_DESCRIPTION = getScoreDescription(img, cfgc)
 
 # # Write drawn image to disk.
-# OUT_FILENAME = "outputs/draw_board_cb.jpg"
-# print("Saving aligned image : ", OUT_FILENAME)
-# cv2.imwrite(OUT_FILENAME, img)
+OUT_FILENAME = "outputs/draw_board_and_centers_cb.jpg"
+print("Saving aligned image : ", OUT_FILENAME)
+cv2.imwrite(OUT_FILENAME, img)
 
 # # cv2.imshow('dartboard', img)
 # # cv2.waitKey()

@@ -23,21 +23,6 @@ def cm2pix(cm):
     result = cm / 39.4 * cfgc.DOUBLE_OUT_R * 2
     return result
 
-mu = [cm2pix(-5), cm2pix(-5)]
-sigma = [[cm2pix(100), 0], [0, cm2pix(80)]]
-
-# 2次元正規乱数を1万個生成
-values = multivariate_normal(mu, sigma, 3)
-
-# # 散布図
-# sns.jointplot(values[:,0], values[:,1])
-# plt.show()
-
-mu = np.mean(values, axis=0)
-sigma = np.cov(np.transpose(values))
-print(mu)
-print(sigma)
-
 
 #ガウス二次元確率密度を返す関数
 def getNormal(in_mu, in_sigma):
@@ -60,16 +45,33 @@ def flatten(l):
             yield el
 
 
+# # upload pickle
 
-board_description_str, board_description_int = draw_dartboard.getScoreDescription(img, cfgc)
+# board_description_str, board_description_int = draw_dartboard.getScoreDescription(img, cfgc)
+# filename = 'dp_sets'
+# outfile = open(filename, 'wb')
+# pickle.dump(dp_sets, outfile)
+# outfile.close()
+# filename = 'board_description_str'
+# outfile = open(filename, 'wb')
+# pickle.dump(board_description_str, outfile)
+# outfile.close()
+# # load pickle
+filename = 'dp_sets'
+infile = open(filename, 'rb')
+dp_sets = pickle.load(infile)
+infile.close()
 filename = 'board_description_int'
-outfile = open(filename, 'wb')
-pickle.dump(board_description_int, outfile)
-outfile.close()
+infile = open(filename, 'rb')
+board_description_int = pickle.load(infile)
+infile.close()
 filename = 'board_description_str'
-outfile = open(filename, 'wb')
-pickle.dump(board_description_str, outfile)
-outfile.close()
+infile = open(filename, 'rb')
+board_description_str = pickle.load(infile)
+infile.close()
+
+
+
 
 #######################
 import cv2
@@ -82,10 +84,9 @@ img = cv2.imread(refFilename, cv2.IMREAD_COLOR)
 center_of_regions = cfgc.getCenterOfRegions()
 center_of_regions_scores = cfgc.getCenterOfRegionsScores(center_of_regions)
 
-board_description_int.shape
 
 
-def p(score_int_hit, region_aim):
+def p(score_int_hit, region_aim, mu, sigma):
     region_args = np.argwhere(board_description_int == score_int_hit)
     # print("args for ", score_int_hit, " is: ", region_args.shape, end="")
     xy_aim = center_of_regions[region_aim]
@@ -97,45 +98,113 @@ def p(score_int_hit, region_aim):
         # print(normal(region_args[i]))
         result += normal(region_args[i])
     # print("   ... result: p(",score_int_hit, region_aim, ") = ", result[0])
-    return result[0]
+    return result
 
-def getOptim(remaing):
-    dp_sets, dp_counts = dp.getDPSets(60)
+def getOptimFromScoreString(remaing, mu,  sigma):
     strategies = dp_sets[remaing]
+
+    # get (x, y) of possible targets
     possible_targets_scores = list(set(list(flatten(strategies))))
-    print(possible_targets_scores)
     possible_targets = []
     for key, value in center_of_regions_scores.items():
         for i in range(len(possible_targets_scores)):
             if value == possible_targets_scores[i]:
                 possible_targets.append(key)
-    print(possible_targets)
+    # print(possible_targets)
 
+    # calculate argmin
     strategies_list = list(map(list, strategies))
     strategies_lengths = list(map(len, strategies))
     best_target = ""
     loss_min = np.inf
-    for d in set(possible_targets):
+    worst_target = ""
+    loss_max = 0
+    losses_for_target = {}
+    for d in possible_targets:
         loss = 0
         for k in range(len(strategies)):
             loss_sub = 0
             for m in range(strategies_lengths[k]):
-                loss_sub += p(strategies_list[k][m], d)
+                loss_sub += p(strategies_list[k][m], d, mu, sigma)
             # print("loss_sub = ", loss_sub)
             loss_sub *= strategies_lengths[k]
             loss += loss_sub
         # print("loss = ", loss)
-
+        losses_for_target[d] = loss
         if loss < loss_min:
             # print("loss = ", loss, " loss_min = ", loss_min, "  >>>> target updated to: ", d)
             loss_min = loss
             best_target = d
-    return best_target
+        if loss > loss_max:
+            # print("loss = ", loss, " loss_min = ", loss_min, "  >>>> target updated to: ", d)
+            loss_max = loss
+            worst_target = d
+    return best_target, worst_target, losses_for_target
 
 
+mu = [-5, -5]
+sigma = [[100, 0], [0, 80]]
+
+mu_pix = [cm2pix(-5), cm2pix(-5)]
+sigma_pix = [[cm2pix(100), 30], [30, cm2pix(80)]]
+
+# 2次元正規乱数生成
+values = multivariate_normal(mu_pix, sigma_pix, 3)
+
+# # 散布図
+# sns.jointplot(values[:,0], values[:,1])
+# plt.show()
+
+# mu = np.mean(values, axis=0)
+# sigma = np.cov(np.transpose(values))
+# print(mu)
+# print(sigma)
+
+# import time
+# start = time.time()
+
+# best_target, worst_target, losses_for_target = getOptimFromScoreString(6, mu, sigma)
+# print(len(losses_for_target))
+# t = time.time() - start
+
+# print("t = ", t)
+# range_of_losses = losses_for_target[best_target] - losses_for_target[worst_target]
+
+# # # Read reference image
+# refFilename = "resources/shomen_cb.jpeg"
+# print("Reading reference image : ", refFilename)
+# img = cv2.imread(refFilename, cv2.IMREAD_COLOR)
 
 
+# img = draw_dartboard.draw_regions(img, 0, 0, cfgc)
+# img_mu = img.copy()
 
-optim_point = getOptim(6)
-print(optim_point)
-p(9, "bull_in")
+# center_of_regions = cfgc.getCenterOfRegions()
+
+# def getTargetForMu(mu, target):
+#     return tuple(np.array(value, dtype=int) + np.array(mu, dtype=int))
+
+# for key, value in center_of_regions.items():
+#     # print(key, value)
+#     color = (0, 0, 0)
+#     if key in losses_for_target:
+#         loss = losses_for_target[key]
+#         worst_loss = losses_for_target[worst_target]
+#         rate = 255 - int((loss - worst_loss) / range_of_losses * 255)
+#         color = (0, rate, 255)
+#     else: color = (0, 0, 0)
+#     img = cv2.circle(img, value, 5, color, 3)
+#     img_mu = cv2.circle(img_mu, getTargetForMu(mu, value), 5, color, 3)
+#     if key == best_target:
+#         img = cv2.circle(img, value, 10, (0,255,0), 5)
+#         img_mu = cv2.circle(img_mu, getTargetForMu(mu, value), 10, (0,255,0), 5)
+
+# # # Write drawn image to disk.
+# OUT_FILENAME = "outputs/draw_board_and_centers_cb.jpg"
+# print("Saving aligned image : ", OUT_FILENAME)
+# cv2.imwrite(OUT_FILENAME, img)
+# # # Write drawn image to disk.
+# OUT_FILENAME = "outputs/draw_board_and_centers_mu_cb.jpg"
+# print("Saving aligned image : ", OUT_FILENAME)
+# cv2.imwrite(OUT_FILENAME, img_mu)
+
