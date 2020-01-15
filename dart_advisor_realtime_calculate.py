@@ -23,11 +23,20 @@ from detect_diff import getDifference, getLinePts, cropOutObject
 from draw_dartboard import draw_regions
 from align_Images import alignImages
 
+filename = 'board_description_int'
+infile = open(filename, 'rb')
+board_description_int = pickle.load(infile)
+infile.close()
+filename = 'board_description_str'
+infile = open(filename, 'rb')
+board_description_str = pickle.load(infile)
+infile.close()
+
 def cm2pix(cm):
     result = cm / 39.4 * cfg.DOUBLE_OUT_R * 2
     return result
 mu_pix = [cm2pix(-5), cm2pix(-5)]
-sigma_pix = [[cm2pix(100), 30], [30, cm2pix(80)]]
+sigma_pix = [[cm2pix(10), 3], [3, cm2pix(8)]]
 
 # 2次元正規乱数生成
 values = multivariate_normal(mu_pix, sigma_pix, 10)
@@ -188,52 +197,54 @@ while True:
         outfile = cv2.circle(im_thrown_ref_drawn , apex_ref,  10, (0, 0, 255), 5)
         cv2.imshow("on score board", outfile)
         score = cfg.getScore(apex_ref)
-        remaining = SCORES[score]
+
         print(score, "!!!!!")
         cv2.imshow("Calculate Difference masked", diff_thred)
         image = cv2.putText(outfile, "score = " + str(score), (50, 50), cv2.FONT_HERSHEY_SIMPLEX , 1, (0,0,255), 2, cv2.LINE_AA)
         cv2.imshow("on score board with score", outfile)
 
-        new_value = np.array(cfg.CENTER) - np.array(apex_ref)
-        value = np.append(values, new_value, axis = 0)
+        if SCORES[remaining] < remaining:
+            remaining -= SCORES[score]
+            new_value = np.array(draw_dartboard.) - np.array(apex_ref)
+            value = np.append(values, new_value, axis = 0)
 
-        mu = np.mean(values, axis=0)
-        sigma = np.cov(np.transpose(values))
-        best_target, worst_target, losses_for_target = optimizer.getOptimFromScoreString(remaining, mu, sigma)
+            mu = np.mean(values, axis=0)
+            sigma = np.cov(np.transpose(values))
+            best_target, worst_target, losses_for_target = optimizer.getOptimFromScoreString(remaining, mu, sigma)
 
-        # # Read reference image
-        refFilename = "resources/shomen_cb.jpeg"
-        print("Reading reference image : ", refFilename)
-        img = cv2.imread(refFilename, cv2.IMREAD_COLOR)
+            # # Read reference image
+            refFilename = "resources/shomen_cb.jpeg"
+            print("Reading reference image : ", refFilename)
+            img = cv2.imread(refFilename, cv2.IMREAD_COLOR)
 
 
-        img = draw_dartboard.draw_regions(img, 0, 0, cfgc)
-        img_mu = img.copy()
+            img = draw_dartboard.draw_regions(img, 0, 0, cfgc)
+            img_mu = img.copy()
 
-        center_of_regions = cfgc.getCenterOfRegions()
+            center_of_regions = cfgc.getCenterOfRegions()
 
-        def getTargetForMu(mu, target):
-            return tuple(np.array(value, dtype=int) + np.array(mu, dtype=int))
+            def getTargetForMu(mu, target):
+                return tuple(np.array(value, dtype=int) + np.array(mu, dtype=int))
 
-        for key, value in center_of_regions.items():
-            # print(key, value)
-            color = (0, 0, 0)
-            if key in losses_for_target:
-                loss = losses_for_target[key]
-                worst_loss = losses_for_target[worst_target]
-                rate = 255 - int((loss - worst_loss) / range_of_losses * 255)
-                color = (0, rate, 255)
-            else: color = (0, 0, 0)
-            img = cv2.circle(img, value, 5, color, 3)
-            img_mu = cv2.circle(img_mu, getTargetForMu(mu, value), 5, color, 3)
-            if key == best_target:
-                img = cv2.circle(img, value, 10, (0,255,0), 5)
-                img_mu = cv2.circle(img_mu, getTargetForMu(mu, value), 10, (0,255,0), 5)
+            for key, value in center_of_regions.items():
+                # print(key, value)
+                color = (0, 0, 0)
+                if key in losses_for_target:
+                    loss = losses_for_target[key]
+                    worst_loss = losses_for_target[worst_target]
+                    rate = 255 - int((loss - worst_loss) / range_of_losses * 255)
+                    color = (0, rate, 255)
+                else: color = (0, 0, 0)
+                img = cv2.circle(img, value, 5, color, 3)
+                img_mu = cv2.circle(img_mu, getTargetForMu(mu, value), 5, color, 3)
+                if key == best_target:
+                    img = cv2.circle(img, value, 10, (0,255,0), 5)
+                    img_mu = cv2.circle(img_mu, getTargetForMu(mu, value), 10, (0,255,0), 5)
 
-        # # Write drawn image to disk.
-        OUT_FILENAME = "outputs/you should throw here!!.jpg"
-        print("Saving aligned image : ", OUT_FILENAME)
-        cv2.imwrite(OUT_FILENAME, img)
+            # # Write drawn image to disk.
+            OUT_FILENAME = "outputs/you should throw here!!.jpg"
+            print("Saving aligned image : ", OUT_FILENAME)
+            cv2.imwrite(OUT_FILENAME, img)
 
 
 

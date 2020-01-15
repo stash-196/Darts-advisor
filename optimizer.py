@@ -143,7 +143,7 @@ def getOptimFromScoreString(remaing, mu,  sigma):
 
 
 mu = [-5, -5]
-sigma = [[100, 0], [0, 80]]
+sigma = [[10, 0], [0, 8]]
 
 mu_pix = [cm2pix(-5), cm2pix(-5)]
 sigma_pix = [[cm2pix(100), 30], [30, cm2pix(80)]]
@@ -151,60 +151,60 @@ sigma_pix = [[cm2pix(100), 30], [30, cm2pix(80)]]
 # 2次元正規乱数生成
 values = multivariate_normal(mu_pix, sigma_pix, 3)
 
-# # 散布図
-# sns.jointplot(values[:,0], values[:,1])
-# plt.show()
+# 散布図
+sns.jointplot(values[:,0], values[:,1])
+plt.show()
 
-# mu = np.mean(values, axis=0)
-# sigma = np.cov(np.transpose(values))
-# print(mu)
-# print(sigma)
+mu = np.mean(values, axis=0)
+sigma = np.cov(np.transpose(values))
+print(mu)
+print(sigma)
 
-# import time
-# start = time.time()
+import time
+start = time.time()
 
-# best_target, worst_target, losses_for_target = getOptimFromScoreString(6, mu, sigma)
-# print(len(losses_for_target))
-# t = time.time() - start
+best_target, worst_target, losses_for_target = getOptimFromScoreString(6, mu, sigma)
+print(len(losses_for_target))
+t = time.time() - start
 
-# print("t = ", t)
-# range_of_losses = losses_for_target[best_target] - losses_for_target[worst_target]
+print("t = ", t)
+range_of_losses = losses_for_target[best_target] - losses_for_target[worst_target]
 
-# # # Read reference image
-# refFilename = "resources/shomen_cb.jpeg"
-# print("Reading reference image : ", refFilename)
-# img = cv2.imread(refFilename, cv2.IMREAD_COLOR)
+# # Read reference image
+refFilename = "resources/shomen_cb.jpeg"
+print("Reading reference image : ", refFilename)
+img = cv2.imread(refFilename, cv2.IMREAD_COLOR)
 
 
-# img = draw_dartboard.draw_regions(img, 0, 0, cfgc)
-# img_mu = img.copy()
+img = draw_dartboard.draw_regions(img, 0, 0, cfgc)
+img_mu = img.copy()
 
-# center_of_regions = cfgc.getCenterOfRegions()
+center_of_regions = cfgc.getCenterOfRegions()
 
-# def getTargetForMu(mu, target):
-#     return tuple(np.array(value, dtype=int) + np.array(mu, dtype=int))
+def getTargetForMu(mu, target):
+    return tuple(np.array(value, dtype=int) + np.array(mu, dtype=int))
 
-# for key, value in center_of_regions.items():
-#     # print(key, value)
-#     color = (0, 0, 0)
-#     if key in losses_for_target:
-#         loss = losses_for_target[key]
-#         worst_loss = losses_for_target[worst_target]
-#         rate = 255 - int((loss - worst_loss) / range_of_losses * 255)
-#         color = (0, rate, 255)
-#     else: color = (0, 0, 0)
-#     img = cv2.circle(img, value, 5, color, 3)
-#     img_mu = cv2.circle(img_mu, getTargetForMu(mu, value), 5, color, 3)
-#     if key == best_target:
-#         img = cv2.circle(img, value, 10, (0,255,0), 5)
-#         img_mu = cv2.circle(img_mu, getTargetForMu(mu, value), 10, (0,255,0), 5)
+for key, value in center_of_regions.items():
+    # print(key, value)
+    color = (0, 0, 0)
+    if key in losses_for_target:
+        loss = losses_for_target[key]
+        worst_loss = losses_for_target[worst_target]
+        rate = 255 - int((loss - worst_loss) / range_of_losses * 255)
+        color = (0, rate, 255)
+    else: color = (0, 0, 0)
+    img = cv2.circle(img, value, 5, color, 3)
+    img_mu = cv2.circle(img_mu, getTargetForMu(mu, value), 5, color, 3)
+    if key == best_target:
+        img = cv2.circle(img, value, 10, (0,255,0), 5)
+        img_mu = cv2.circle(img_mu, getTargetForMu(mu, value), 10, (0,255,0), 5)
 
-# # # Write drawn image to disk.
-# OUT_FILENAME = "outputs/draw_board_and_centers_cb.jpg"
-# print("Saving aligned image : ", OUT_FILENAME)
-# cv2.imwrite(OUT_FILENAME, img)
-# # # Write drawn image to disk.
-# OUT_FILENAME = "outputs/draw_board_and_centers_mu_cb.jpg"
-# print("Saving aligned image : ", OUT_FILENAME)
-# cv2.imwrite(OUT_FILENAME, img_mu)
+# # Write drawn image to disk.
+OUT_FILENAME = "outputs/draw_board_and_centers_cb.jpg"
+print("Saving aligned image : ", OUT_FILENAME)
+cv2.imwrite(OUT_FILENAME, img)
+# # Write drawn image to disk.
+OUT_FILENAME = "outputs/draw_board_and_centers_mu_cb.jpg"
+print("Saving aligned image : ", OUT_FILENAME)
+cv2.imwrite(OUT_FILENAME, img_mu)
 
